@@ -1,6 +1,5 @@
 import os
 import math
-import numpy as np
 from Crypto.Hash import SHA256
 
 def selectFileFromBasepath(basepath = "data"):
@@ -19,29 +18,22 @@ def selectFileFromBasepath(basepath = "data"):
 
     return open(basepath + "/" + files[option], "rb")
 
+def chunks(list, chunk_size):
+    chunks = []
+    for i in range(0, len(list), chunk_size):
+        chunks.append(list[i:i + chunk_size])
+    return chunks
+
 file_bytes = selectFileFromBasepath().read()
 block_size = 1024
-file_blocks = np.array_split(file_bytes, block_size)
+file_blocks = chunks(file_bytes, block_size)
 
-print(file_blocks[3:5])
-
-last_block_hash = None
+last_packet_hash = None
 
 for block in reversed(file_blocks):
-    if len(block) < block_size:
-        last_block_hash = sha256.new(block)
+    if last_packet_hash is None:
+        last_packet_hash = SHA256.new(block).digest()
+    else:
+        last_packet_hash = SHA256.new(block+last_packet_hash).digest()
 
-
-# last_block_size = len(file_bytes) % block_size
-# total_blocks = math.ceil(len(file_bytes) / block_size)
-
-# current_block = None
-
-# for i in range(total_blocks, 0, -1):
-#     if current_block == None:
-#         print(i)
-#         block_range = slice(i * block_size, (i * block_size) + last_block_size)
-#         print("range = " + str(block_range))
-#         current_block = file_bytes[block_range]
-
-# print(len(current_block))
+print(last_packet_hash.hex())
