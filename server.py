@@ -31,7 +31,7 @@ while True:
         
         filepath = tcp.recv(32).decode("utf-8")
 
-        print('received ' + filepath)
+        print('received request for file ' + filepath)
 
         file_bytes = fe.getFileBytesFromPath(filepath)
 
@@ -40,45 +40,30 @@ while True:
             block_size = 1024
             file_blocks = chunks(file_bytes, block_size)
             last_packet_hash = None
-            buffer = None
+
+            packets = []
 
             for block in reversed(file_blocks):
-
                 if last_packet_hash is None:
                     last_packet_hash = SHA256.new(block).digest()
-                    buffer = last_packet_hash
+                    packets.insert(0, last_packet_hash)
                 else:
-                    buffer = block + last_packet_hash
-                    last_packet_hash = SHA256.new(buffer).digest()
-
-                    tcp.send(len(block).to_bytes(2, "big"))
-                    tcp.send(buffer)
-
-                time.sleep(0.01)
+                    packet = block + last_packet_hash
+                    packets.insert(0, packet)
+                    last_packet_hash = SHA256.new(packet).digest()
             
-            tcp.send(len(last_packet_hash).to_bytes(2, "big"))
-            tcp.send(last_packet_hash)
+            print(last_packet_hash.hex())
+            print(packets[0].hex())
+
+            for packet in packets:
+                tcp.send(len(packet).to_bytes(2, "big"))
+                tcp.send(packet)
+                time.sleep(0.001)
+            
             tcp.send((0).to_bytes(2, "big"))
-        
-        break
 
     finally:
-        tcp.close()
-        break
+        print("done")
 
 tcp.close()
-
-# file_bytes = selectFileFromBasepath().read()
-# block_size = 1024
-# file_blocks = chunks(file_bytes, block_size)
-
-# last_packet_hash = None
-
-# for block in reversed(file_blocks):
-#     if last_packet_hash is None:
-#         last_packet_hash = SHA256.new(block).digest()
-#     else:
-#         last_packet_hash = SHA256.new(block+last_packet_hash).digest()
-
-# print(last_packet_hash.hex())
 

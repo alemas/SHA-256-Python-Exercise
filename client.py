@@ -15,13 +15,18 @@ tcp.send(filepath.encode("utf-8"))
 
 packet_size = -1
 packet = None
+first = True
 
 while True:
     packet_size = int.from_bytes(tcp.recv(sys.getsizeof(0)), "big")
     if packet_size == 0:
         break
-
+    
     packet = tcp.recv(packet_size)
+
+    if first:
+        first = False
+        print(packet.hex())
     # if packet:
     #     print(packet)
 
